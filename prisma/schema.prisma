@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  walletAddress String    @unique
+  role          UserRole
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  providedTasks Task[]    @relation("Provider")
+  workedTasks   Task[]    @relation("Worker")
+}
+
+enum UserRole {
+  PROVIDER
+  WORKER
+}
+
+model Task {
+  id          String      @id @default(cuid())
+  title       String
+  description String
+  status      TaskStatus
+  reward      Float
+  imageUrl    String
+  ipfsCid     String
+  provider    User        @relation("Provider", fields: [providerId], references: [id])
+  providerId  String
+  worker      User?       @relation("Worker", fields: [workerId], references: [id])
+  workerId    String?
+  submission  Submission?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum TaskStatus {
+  AVAILABLE
+  IN_PROGRESS
+  PENDING_APPROVAL
+  COMPLETED
+}
+
+model Submission {
+  id          String   @id @default(cuid())
+  task        Task     @relation(fields: [taskId], references: [id])
+  taskId      String   @unique
+  annotations String
+  resultUrl   String?
+  ipfsCid     String?
+  txSignature String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Transaction {
+  id          String           @id @default(cuid())
+  type        TransactionType
+  amount      Float
+  status      TransactionStatus
+  txSignature String           @unique
+  fromAddress String
+  toAddress   String
+  description String?
+  createdAt   DateTime         @default(now())
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TASK_PAYMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
